@@ -1,25 +1,22 @@
 import os
+import requests
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-import requests
-
-# Pegando o token da variável de ambiente
-TOKEN = os.getenv("TELEGRAM_TOKEN")
 
 # Função para buscar informações usando a URL da imagem
 def search_image(url):
     api_url = "https://api.camgirlfinder.net/search"
-    params = {"url": url}
-    headers = {"User-Agent": "TelegramBot/1.0"}
-    response = requests.get(api_url, params=params, headers=headers)
-    return response.json()
+    params = {"url": url}  # Passa a URL da imagem como parâmetro
+    headers = {"User-Agent": "TelegramBot/1.0"}  # Cabeçalho de User-Agent
+    response = requests.get(api_url, params=params, headers=headers)  # Faz a requisição GET
+    return response.json()  # Retorna a resposta como um JSON
 
 # Função para buscar modelos por nome
 def search_models(query):
-    api_url = f"https://api.camgirlfinder.net/models/search?model={query}"
-    headers = {"User-Agent": "TelegramBot/1.0"}
-    response = requests.get(api_url, headers=headers)
-    return response.json()
+    api_url = f"https://api.camgirlfinder.net/models/search?model={query}"  # URL para buscar por modelos
+    headers = {"User-Agent": "TelegramBot/1.0"}  # Cabeçalho de User-Agent
+    response = requests.get(api_url, headers=headers)  # Faz a requisição GET
+    return response.json()  # Retorna a resposta como um JSON
 
 # Função do comando /foto (enviar a foto para o bot)
 async def foto_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -45,8 +42,23 @@ async def url_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"Pesquisando informações para a URL: {image_url}...")
     
     try:
-        result = search_image(image_url)
-        await update.message.reply_text(f"Resultados: {result}")
+        result = search_image(image_url)  # Chama a função que usa a API
+        
+        # Formata a resposta da API de forma legível
+        if result.get('success'):  # Verifica se a API retornou um sucesso
+            data = result.get('data', [])
+            if data:
+                # Caso a resposta contenha dados, formate-os e envie-os
+                response_text = "Resultados encontrados:\n"
+                for item in data:
+                    response_text += f"Link da Imagem: {item.get('image_url')}\n"
+                    response_text += f"Modelo: {item.get('model_name')}\n\n"
+                await send_long_message(update, response_text)
+            else:
+                await update.message.reply_text("Nenhum resultado encontrado para essa URL.")
+        else:
+            await update.message.reply_text(f"Erro ao buscar a imagem: {result.get('error', 'Desconhecido')}")
+    
     except Exception as e:
         await update.message.reply_text(f"Ocorreu um erro: {str(e)}")
 
@@ -65,17 +77,24 @@ async def perfil_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"Ocorreu um erro: {str(e)}")
 
+# Função para enviar mensagens longas
+async def send_long_message(update, text):
+    # Envia a resposta em múltiplas mensagens se for longa
+    max_length = 4000  # Limite de caracteres por mensagem no Telegram
+    for i in range(0, len(text), max_length):
+        await update.message.reply_text(text[i:i+max_length])
+
 # Inicialização do bot
-if TOKEN is None:
-    print("Erro: O token não foi encontrado. Defina a variável de ambiente TELEGRAM_TOKEN.")
-else:
-    app = ApplicationBuilder().token(TOKEN).build()
+TOKEN = os.getenv("TELEGRAM_TOKEN")  # Usa a variável de ambiente para o token
 
-    # Adicionando os handlers para cada comando
-    app.add_handler(CommandHandler("foto", foto_command))
-    app.add_handler(CommandHandler("url", url_command))
-    app.add_handler(CommandHandler("perfil", perfil_command))
+# Criação do bot
+app = ApplicationBuilder().token(TOKEN).build()
 
-    # Iniciar o bot
-    print("Bot está funcionando!")
-    app.run_polling()
+# Adicionando os handlers para cada comando
+app.add_handler(CommandHandler("foto", foto_command))
+app.add_handler(CommandHandler("url", url_command))
+app.add_handler(CommandHandler("perfil", perfil_command))
+
+# Iniciar o bot
+print("Bot está funcionando!")
+app.run_polling()
