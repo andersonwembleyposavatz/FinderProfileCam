@@ -62,7 +62,7 @@ async def perfil_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"Ocorreu um erro: {str(e)}")
 
 # Inicialização do bot
-TOKEN = "7312259953:AAEiWZ7yLPRt5vTxArIksUWpBhNtvDx7pzU"  # Substitua pelo token do BotFather
+TOKEN = "SEU_TOKEN_AQUI"  # Substitua pelo token do BotFather
 
 app = ApplicationBuilder().token(TOKEN).build()
 
