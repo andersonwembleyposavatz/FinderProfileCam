@@ -1,6 +1,10 @@
-import requests
+import os
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+import requests
+
+# Pegando o token da variável de ambiente
+TOKEN = os.getenv("TELEGRAM_TOKEN")
 
 # Função para buscar informações usando a URL da imagem
 def search_image(url):
@@ -62,15 +66,16 @@ async def perfil_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"Ocorreu um erro: {str(e)}")
 
 # Inicialização do bot
-TOKEN = "SEU_TOKEN_AQUI"  # Substitua pelo token do BotFather
+if TOKEN is None:
+    print("Erro: O token não foi encontrado. Defina a variável de ambiente TELEGRAM_TOKEN.")
+else:
+    app = ApplicationBuilder().token(TOKEN).build()
 
-app = ApplicationBuilder().token(TOKEN).build()
+    # Adicionando os handlers para cada comando
+    app.add_handler(CommandHandler("foto", foto_command))
+    app.add_handler(CommandHandler("url", url_command))
+    app.add_handler(CommandHandler("perfil", perfil_command))
 
-# Adicionando os handlers para cada comando
-app.add_handler(CommandHandler("foto", foto_command))
-app.add_handler(CommandHandler("url", url_command))
-app.add_handler(CommandHandler("perfil", perfil_command))
-
-# Iniciar o bot
-print("Bot está funcionando!")
-app.run_polling()
+    # Iniciar o bot
+    print("Bot está funcionando!")
+    app.run_polling()
